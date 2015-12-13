@@ -4,7 +4,7 @@ module Mpris.Monad
        ( Mpris
        , State(..)
        , current
-       , Mpris.Monad.call
+       , call
        , runMpris
        ) where
 
@@ -13,9 +13,9 @@ import Control.Exception (bracket)
 import Control.Monad.State hiding (State)
 
 import DBus
-import DBus.Client
+import qualified DBus.Client as D
 
-data State = State { client :: Client
+data State = State { client :: D.Client
                    , players :: [BusName] }
 
 type Mpris a = StateT State IO a
@@ -29,12 +29,12 @@ current = gets currentPlayer
 call :: MethodCall -> Mpris (Either MethodError MethodReturn)
 call method = do
   client <- gets client
-  liftIO $ DBus.Client.call client method
+  liftIO $ D.call client method
 
 runMpris :: Mpris a -> IO a
 runMpris code = bracket
   (do
-   client <- connectSession
+   client <- D.connectSession
    return State { client = client, players = [busName_ "org.mpris.MediaPlayer2.mpd"] })
-  (\(State {client = client}) -> disconnect client)
+  (\(State {client = client}) -> D.disconnect client)
   (evalStateT code)
