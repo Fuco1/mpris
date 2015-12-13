@@ -5,10 +5,12 @@ module Mpris.Monad
        , State(..)
        , current
        , call
+       , call_
        , runMpris
        ) where
 
 import Control.Exception (bracket)
+import Control.Monad (void)
 
 import Control.Monad.State hiding (State)
 
@@ -30,6 +32,9 @@ call :: MethodCall -> Mpris (Either MethodError MethodReturn)
 call method = do
   client <- gets client
   liftIO $ D.call client method
+
+call_ :: MethodCall -> Mpris ()
+call_ = void . call
 
 runMpris :: Mpris a -> IO a
 runMpris code = bracket
