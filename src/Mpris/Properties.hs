@@ -1,5 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | Utilities to work with dbus properties.
+--
+-- A very simple api to org.freedesktop.DBus.Properties.
 module Mpris.Properties
        ( getProperty
        ) where
