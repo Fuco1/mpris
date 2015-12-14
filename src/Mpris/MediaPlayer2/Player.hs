@@ -2,6 +2,7 @@
 
 module Mpris.MediaPlayer2.Player
        ( playPause
+       , module Mpris.MediaPlayer2.Player.Properties
        ) where
 
 import DBus
@@ -9,6 +10,8 @@ import Control.Monad.State hiding (State)
 
 import Mpris.Monad
 import Mpris.Utils
+
+import Mpris.MediaPlayer2.Player.Properties
 
 mprisCall :: MemberName -> MethodCall
 mprisCall = methodCall "/org/mpris/MediaPlayer2" "org.mpris.MediaPlayer2.Player"
