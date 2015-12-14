@@ -4,18 +4,33 @@
 name:                mpris
 version:             0.1.0.0
 synopsis:            Interface for MPRIS
--- description:         
+-- description:
 homepage:            http://github.com/Fuco1/mpris
 license:             GPL-3
 license-file:        LICENSE
 author:              Matus Goljer
 maintainer:          matus.goljer@gmail.com
--- copyright:           
+-- copyright:
 category:            Media
 build-type:          Simple
 cabal-version:       >=1.8
 
 library
-  -- exposed-modules:     
-  -- other-modules:       
-  build-depends:       base ==4.6.*
+  hs-source-dirs:
+    src
+  exposed-modules:
+    Mpris.MediaPlayer2
+    Mpris.MediaPlayer2.Player
+  other-modules:
+    Mpris.Monad
+    Mpris.Properties
+    Mpris.Utils
+    Mpris.MediaPlayer2.Properties
+    Mpris.MediaPlayer2.Methods
+    Mpris.MediaPlayer2.Player.Properties
+    Mpris.MediaPlayer2.Player.Methods
+  build-depends:
+    base                    ==4.6.*,
+    dbus                    >= 0.10,
+    mtl                     >= 2.1.2,
+    containers              >= 0.5
