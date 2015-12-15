@@ -3,7 +3,7 @@
 -- | Implements the methods of org.mpris.MediaPlayer2.Player interface.
 --
 -- More information at <http://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html>
-module Mpris.MediaPlayer2.Player.Methods
+module DBus.Mpris.MediaPlayer2.Player.Methods
        ( next
        , previous
        , pause
@@ -18,8 +18,8 @@ module Mpris.MediaPlayer2.Player.Methods
 import Data.Int
 import DBus
 
-import Mpris.Monad
-import Mpris.Utils
+import DBus.Mpris.Monad
+import DBus.Mpris.Utils
 
 mprisCall :: MemberName -> MethodCall
 mprisCall = methodCall "/org/mpris/MediaPlayer2" "org.mpris.MediaPlayer2.Player"

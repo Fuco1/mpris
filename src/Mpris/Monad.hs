@@ -19,7 +19,7 @@
 -- > main = do
 -- >   let bus = busName_ "org.mpris.MediaPlayer2.mpd"
 -- >   runMpris $ pause bus
-module Mpris.Monad
+module DBus.Mpris.Monad
        ( Mpris
        , State(..)
        , current

@@ -1,6 +1,6 @@
 -- | Utilities for work with dbus which are missing from the dbus
 -- backage.
-module Mpris.Utils
+module DBus.Mpris.Utils
        ( to
        ) where
 

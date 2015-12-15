@@ -3,7 +3,7 @@
 -- | Properties from the org.mpris.MediaPlayer2 interface
 --
 -- More information at <http://specifications.freedesktop.org/mpris-spec/latest/Media_Player.html>
-module Mpris.MediaPlayer2.Properties
+module DBus.Mpris.MediaPlayer2.Properties
        ( canQuit
        , fullscreen
        , identity
@@ -15,8 +15,8 @@ module Mpris.MediaPlayer2.Properties
 
 import DBus
 
-import Mpris.Properties
-import Mpris.Monad
+import DBus.Mpris.Properties
+import DBus.Mpris.Monad
 
 property :: IsVariant a => String -> BusName -> Mpris (Maybe a)
 property = getProperty "org.mpris.MediaPlayer2"

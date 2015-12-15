@@ -3,14 +3,14 @@
 -- | Utilities to work with dbus properties.
 --
 -- A very simple api to org.freedesktop.DBus.Properties.
-module Mpris.Properties
+module DBus.Mpris.Properties
        ( getProperty
        ) where
 
 import DBus
 
-import Mpris.Monad
-import Mpris.Utils
+import DBus.Mpris.Monad
+import DBus.Mpris.Utils
 
 -- | Construct a call to get value of property at interface
 propertyCall :: String     -- ^ Interface

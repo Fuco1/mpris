@@ -34,16 +34,16 @@ library
   hs-source-dirs:
     src
   exposed-modules:
-    Mpris.Monad
-    Mpris.Utils
-    Mpris.MediaPlayer2
-    Mpris.MediaPlayer2.Player
+    DBus.Mpris.Monad
+    DBus.Mpris.Utils
+    DBus.Mpris.MediaPlayer2
+    DBus.Mpris.MediaPlayer2.Player
   other-modules:
-    Mpris.Properties
-    Mpris.MediaPlayer2.Properties
-    Mpris.MediaPlayer2.Methods
-    Mpris.MediaPlayer2.Player.Properties
-    Mpris.MediaPlayer2.Player.Methods
+    DBus.Mpris.Properties
+    DBus.Mpris.MediaPlayer2.Properties
+    DBus.Mpris.MediaPlayer2.Methods
+    DBus.Mpris.MediaPlayer2.Player.Properties
+    DBus.Mpris.MediaPlayer2.Player.Methods
   build-depends:
     base                    ==4.6.*,
     dbus                    >= 0.10,

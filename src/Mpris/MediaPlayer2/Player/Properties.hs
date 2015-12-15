@@ -5,7 +5,7 @@
 -- All properties are currently read-only
 --
 -- More information at <http://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html>
-module Mpris.MediaPlayer2.Player.Properties
+module DBus.Mpris.MediaPlayer2.Player.Properties
        ( PlaybackStatus(..)
        , playbackStatus
        , LoopStatus(..)
@@ -30,8 +30,8 @@ import Data.Map
 import Data.Int (Int64)
 import Control.Monad (liftM)
 
-import Mpris.Properties
-import Mpris.Monad
+import DBus.Mpris.Properties
+import DBus.Mpris.Monad
 
 unpackIntM :: Mpris (Maybe Int64) -> Mpris (Maybe Integer)
 unpackIntM = liftM . liftM $ fromIntegral
