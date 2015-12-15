@@ -2,7 +2,7 @@
 
 -- | Implements the methods of org.mpris.MediaPlayer2.Player interface.
 --
--- More information at http://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html
+-- More information at <http://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html>
 module Mpris.MediaPlayer2.Player.Methods
        ( next
        , previous

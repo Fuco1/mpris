@@ -4,7 +4,7 @@
 --
 -- All properties are currently read-only
 --
--- More information at http://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html
+-- More information at <http://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html>
 module Mpris.MediaPlayer2.Player.Properties
        ( PlaybackStatus
        , playbackStatus
