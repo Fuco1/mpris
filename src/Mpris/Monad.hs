@@ -3,8 +3,22 @@
 -- | Convenient monad for running MPRIS actions.
 --
 -- It is a 'StateT' on top of 'IO' which handles the connection and
--- caches available players as 'BusName's.  Inside it are a couple
--- useful functions to work with current player and make MPRIS calls.
+-- caches available players as 'BusName' s.
+--
+-- It contains some useful functions to work with current player and
+-- make MPRIS calls.
+--
+-- For example, to pause the playback on current player, you can do
+--
+-- > pauseCurrent :: Mpris ()
+-- > pauseCurrent = current >>= pause
+--
+-- To evaluate a Mpris action use 'runMpris' which brings it back into 'IO', for example:
+--
+-- > main :: IO ()
+-- > main = do
+-- >   let bus = busName_ "org.mpris.MediaPlayer2.mpd"
+-- >   runMpris $ pause bus
 module Mpris.Monad
        ( Mpris
        , State(..)
