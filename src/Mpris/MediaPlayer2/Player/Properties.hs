@@ -3,7 +3,9 @@
 -- | Properties from the org.mpris.MediaPlayer2.Player interface
 -- All properties are currently read-only
 module Mpris.MediaPlayer2.Player.Properties
-       ( playbackStatus
+       ( PlaybackStatus
+       , playbackStatus
+       , LoopStatus
        , loopStatus
        , rate
        , shuffle
@@ -31,14 +33,31 @@ import Mpris.Monad
 unpackIntM :: Mpris (Maybe Int64) -> Mpris (Maybe Integer)
 unpackIntM = liftM . liftM $ fromIntegral
 
+readM :: Read a => Mpris (Maybe String) -> Mpris (Maybe a)
+readM = liftM . liftM $ read
+
 property :: IsVariant a => String -> BusName -> Mpris (Maybe a)
 property = getProperty "org.mpris.MediaPlayer2.Player"
 
-playbackStatus :: BusName -> Mpris (Maybe String)
-playbackStatus = property "PlaybackStatus"
+-- | A playback state.
+data PlaybackStatus = Playing -- ^ A track is currently playing.
+                    | Paused  -- ^ A track is currently paused.
+                    | Stopped -- ^ There is no track currently playing.
+                    deriving (Show, Read)
 
-loopStatus :: BusName -> Mpris (Maybe String)
-loopStatus = property "LoopStatus"
+-- | The current playback status.
+playbackStatus :: BusName -> Mpris (Maybe PlaybackStatus)
+playbackStatus = readM . property "PlaybackStatus"
+
+-- | A repeat / loop status
+data LoopStatus = None     -- ^ The playback will stop when there are no more tracks to play
+                | Track    -- ^ The current track will start again from the begining once it has finished playing
+                | Playlist -- ^ The playback loops through a list of tracks
+                deriving (Show, Read)
+
+-- | The current loop / repeat status
+loopStatus :: BusName -> Mpris (Maybe LoopStatus)
+loopStatus = readM . property "LoopStatus"
 
 rate :: BusName -> Mpris (Maybe Double)
 rate = property "Rate"
