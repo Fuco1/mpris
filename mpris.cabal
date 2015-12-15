@@ -15,6 +15,11 @@ category:            Media
 build-type:          Simple
 cabal-version:       >=1.8
 
+source-repository this
+  type: git
+  location: http://github.com/Fuco1/mpris
+  tag: 0.1.0.0
+
 library
   hs-source-dirs:
     src
