@@ -19,12 +19,12 @@ library
   hs-source-dirs:
     src
   exposed-modules:
+    Mpris.Monad
+    Mpris.Utils
     Mpris.MediaPlayer2
     Mpris.MediaPlayer2.Player
   other-modules:
-    Mpris.Monad
     Mpris.Properties
-    Mpris.Utils
     Mpris.MediaPlayer2.Properties
     Mpris.MediaPlayer2.Methods
     Mpris.MediaPlayer2.Player.Properties
