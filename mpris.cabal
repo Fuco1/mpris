@@ -39,6 +39,7 @@ library
     DBus.Mpris.MediaPlayer2
     DBus.Mpris.MediaPlayer2.Player
   other-modules:
+    DBus.Mpris.Monad.Internal
     DBus.Mpris.Properties
     DBus.Mpris.MediaPlayer2.Properties
     DBus.Mpris.MediaPlayer2.Methods

@@ -35,6 +35,7 @@ import Control.Monad.State hiding (State)
 
 import DBus
 import qualified DBus.Client as D
+import DBus.Mpris.Monad.Internal (getPlayers)
 
 -- | Internal state.
 --
@@ -72,6 +73,8 @@ runMpris :: Mpris a -> IO a
 runMpris code = bracket
   (do
    client <- D.connectSession
-   return State { client = client, players = [busName_ "org.mpris.MediaPlayer2.mpd"] })
+   players <- getPlayers client
+   return State { client = client, players = players }
+  )
   (\(State {client = client}) -> D.disconnect client)
   (evalStateT code)
