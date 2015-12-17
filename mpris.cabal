@@ -44,6 +44,7 @@ library
     DBus.Mpris.MediaPlayer2.Properties
     DBus.Mpris.MediaPlayer2.Methods
     DBus.Mpris.MediaPlayer2.Player.Properties
+    DBus.Mpris.MediaPlayer2.Player.Data
     DBus.Mpris.MediaPlayer2.Player.Methods
   build-depends:
     base                    ==4.6.*,

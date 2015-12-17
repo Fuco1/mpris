@@ -33,6 +33,8 @@ import Control.Monad (liftM)
 import DBus.Mpris.Properties
 import DBus.Mpris.Monad
 
+import DBus.Mpris.MediaPlayer2.Player.Data
+
 unpackIntM :: Mpris (Maybe Int64) -> Mpris (Maybe Integer)
 unpackIntM = liftM . liftM $ fromIntegral
 
@@ -42,21 +44,9 @@ readM = liftM . liftM $ read
 property :: IsVariant a => String -> BusName -> Mpris (Maybe a)
 property = getProperty "org.mpris.MediaPlayer2.Player"
 
--- | A playback state.
-data PlaybackStatus = Playing -- ^ A track is currently playing.
-                    | Paused  -- ^ A track is currently paused.
-                    | Stopped -- ^ There is no track currently playing.
-                    deriving (Show, Read)
-
 -- | The current playback status.
 playbackStatus :: BusName -> Mpris (Maybe PlaybackStatus)
 playbackStatus = readM . property "PlaybackStatus"
-
--- | A repeat / loop status
-data LoopStatus = None     -- ^ The playback will stop when there are no more tracks to play
-                | Track    -- ^ The current track will start again from the begining once it has finished playing
-                | Playlist -- ^ The playback loops through a list of tracks
-                deriving (Show, Read)
 
 -- | The current loop / repeat status
 loopStatus :: BusName -> Mpris (Maybe LoopStatus)
