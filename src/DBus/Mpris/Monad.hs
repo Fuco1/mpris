@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 -- | Convenient monad for running MPRIS actions.
 --
@@ -22,20 +24,33 @@
 module DBus.Mpris.Monad
        ( Mpris
        , State(..)
+       , Config
        , current
        , call
        , call_
        , runMpris
        ) where
 
+import Control.Applicative
 import Control.Exception (bracket)
-import Control.Monad (void)
-
-import Control.Monad.State hiding (State)
+import Control.Monad.Reader
+import Data.Default
 
 import DBus
 import qualified DBus.Client as D
+
 import DBus.Mpris.Monad.Internal (getPlayers)
+import DBus.Mpris.MediaPlayer2.Player.Data
+
+data Config = Config
+  { playbackStatusHook :: BusName -> Maybe PlaybackStatus -> Mpris ()
+  , volumeHook :: BusName -> Maybe Double -> Mpris ()
+  }
+
+instance Default Config where
+  def = Config { playbackStatusHook = empty
+               , volumeHook = empty }
+    where empty _ _ = return ()
 
 -- | Internal state.
 --
@@ -45,10 +60,27 @@ import DBus.Mpris.Monad.Internal (getPlayers)
 -- it is removed from the list and placed on top.
 data State = State { client :: D.Client -- ^ The dbus client used to make the calls
                    , players :: [BusName] -- ^ List of available players-capable players as bus names
+                   , config :: Config
                    }
 
--- | Type wrapper for Mpris "monad".
-type Mpris a = StateT State IO a
+-- | Type wrapper for Mpris monad
+newtype Mpris a = Mpris { unMpris :: ReaderT State IO a } deriving Functor
+
+instance Applicative Mpris where
+  pure = Mpris . pure
+  Mpris a <*> Mpris f = Mpris (a <*> f)
+
+instance Monad Mpris where
+  return = Mpris . return
+  Mpris a >>= f = Mpris $ a >>= unMpris . f
+
+instance MonadReader State Mpris where
+  ask = Mpris ask
+  reader f = Mpris $ f `liftM` ask
+  local f (Mpris a) = Mpris $ local f a
+
+instance MonadIO Mpris where
+  liftIO = Mpris . liftIO
 
 -- | Extract current player from the 'State'.
 currentPlayer :: State -> BusName
@@ -56,12 +88,12 @@ currentPlayer = head . players
 
 -- | Return current player
 current :: Mpris BusName
-current = gets currentPlayer
+current = reader currentPlayer
 
 -- | Call a method call in context of current dbus client.
 call :: MethodCall -> Mpris (Either MethodError MethodReturn)
 call method = do
-  client <- gets client
+  client <- reader client
   liftIO $ D.call client method
 
 -- | Like 'call' but ignores the result.
@@ -69,12 +101,14 @@ call_ :: MethodCall -> Mpris ()
 call_ = void . call
 
 -- | Run the 'Mpris' computation and return the result inside 'IO'.
-runMpris :: Mpris a -> IO a
-runMpris code = bracket
+runMpris :: Config -> Mpris a -> IO a
+runMpris config code = bracket
   (do
    client <- D.connectSession
    players <- getPlayers client
-   return State { client = client, players = players }
+   -- register the property listener
+   -- D.addMatch client mprisEventMatcher (propertiesChangedCallback client)
+   return State { client = client, players = players, config = config}
   )
   (\(State {client = client}) -> D.disconnect client)
-  (evalStateT code)
+  (runReaderT $ unMpris code)

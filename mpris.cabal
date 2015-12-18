@@ -50,4 +50,5 @@ library
     base                    ==4.6.*,
     dbus                    >= 0.10,
     mtl                     >= 2.1.2,
-    containers              >= 0.5
+    containers              >= 0.5,
+    data-default            >= 0.5.3
