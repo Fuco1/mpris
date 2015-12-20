@@ -100,6 +100,16 @@ call method = do
 call_ :: MethodCall -> Mpris ()
 call_ = void . call
 
+-- | PropertiesChanged signal matcher.
+mprisEventMatcher :: D.MatchRule
+mprisEventMatcher = D.matchAny
+  { D.matchSender = Nothing
+  , D.matchDestination = Nothing
+  , D.matchPath = Just "/org/mpris/MediaPlayer2"
+  , D.matchInterface = Just "org.freedesktop.DBus.Properties"
+  , D.matchMember = Just "PropertiesChanged"
+  }
+
 -- | Run the 'Mpris' computation and return the result inside 'IO'.
 runMpris :: Config -> Mpris a -> IO a
 runMpris config code = bracket
