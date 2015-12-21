@@ -33,8 +33,9 @@ module DBus.Mpris.Monad
 
 import Control.Applicative
 import Control.Exception (bracket)
-import Control.Monad.Reader
+import Control.Monad.RWS
 import Data.Default
+import Data.IORef
 
 import DBus
 import qualified DBus.Client as D
@@ -60,11 +61,10 @@ instance Default Config where
 -- it is removed from the list and placed on top.
 data State = State { client :: D.Client -- ^ The dbus client used to make the calls
                    , players :: [BusName] -- ^ List of available players-capable players as bus names
-                   , config :: Config
                    }
 
 -- | Type wrapper for Mpris monad
-newtype Mpris a = Mpris { unMpris :: ReaderT State IO a } deriving Functor
+newtype Mpris a = Mpris { unMpris :: RWST Config () (IORef State) IO a } deriving Functor
 
 instance Applicative Mpris where
   pure = Mpris . pure
@@ -74,10 +74,14 @@ instance Monad Mpris where
   return = Mpris . return
   Mpris a >>= f = Mpris $ a >>= unMpris . f
 
-instance MonadReader State Mpris where
+instance MonadReader Config Mpris where
   ask = Mpris ask
   reader f = Mpris $ f `liftM` ask
   local f (Mpris a) = Mpris $ local f a
+
+instance MonadState State Mpris where
+  get = Mpris $ get >>= liftIO . readIORef
+  put s = Mpris $ get >>= liftIO . flip atomicWriteIORef s
 
 instance MonadIO Mpris where
   liftIO = Mpris . liftIO
@@ -88,12 +92,12 @@ currentPlayer = head . players
 
 -- | Return current player
 current :: Mpris BusName
-current = reader currentPlayer
+current = gets currentPlayer
 
 -- | Call a method call in context of current dbus client.
 call :: MethodCall -> Mpris (Either MethodError MethodReturn)
 call method = do
-  client <- reader client
+  client <- gets client
   liftIO $ D.call client method
 
 -- | Like 'call' but ignores the result.
@@ -118,7 +122,9 @@ runMpris config code = bracket
    players <- getPlayers client
    -- register the property listener
    -- D.addMatch client mprisEventMatcher (propertiesChangedCallback client)
-   return State { client = client, players = players, config = config}
+   newIORef State { client = client, players = players }
   )
-  (\(State {client = client}) -> D.disconnect client)
-  (runReaderT $ unMpris code)
+  (\state -> do
+    State {client = client} <- readIORef state
+    D.disconnect client)
+  (liftM fst . evalRWST (unMpris code) config)
