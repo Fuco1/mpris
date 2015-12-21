@@ -24,18 +24,23 @@
 module DBus.Mpris.Monad
        ( Mpris
        , State(..)
-       , Config
+       , Config(..)
+       , Event(..)
        , current
        , call
        , call_
        , runMpris
+       , mpris
        ) where
 
 import Control.Applicative
+import Control.Concurrent (forkIO)
+import Control.Concurrent.Chan
 import Control.Exception (bracket)
 import Control.Monad.RWS
 import Data.Default
 import Data.IORef
+import qualified Data.Map as M
 
 import DBus
 import qualified DBus.Client as D
@@ -45,11 +50,13 @@ import DBus.Mpris.MediaPlayer2.Player.Data
 
 data Config = Config
   { playbackStatusHook :: BusName -> Maybe PlaybackStatus -> Mpris ()
+  , loopStatusHook :: BusName -> Maybe LoopStatus -> Mpris ()
   , volumeHook :: BusName -> Maybe Double -> Mpris ()
   }
 
 instance Default Config where
   def = Config { playbackStatusHook = empty
+               , loopStatusHook = empty
                , volumeHook = empty }
     where empty _ _ = return ()
 
@@ -61,6 +68,7 @@ instance Default Config where
 -- it is removed from the list and placed on top.
 data State = State { client :: D.Client -- ^ The dbus client used to make the calls
                    , players :: [BusName] -- ^ List of available players-capable players as bus names
+                   , chan :: Chan Event -- ^ Event channel
                    }
 
 -- | Type wrapper for Mpris monad
@@ -114,17 +122,73 @@ mprisEventMatcher = D.matchAny
   , D.matchMember = Just "PropertiesChanged"
   }
 
+-- | Mpris events
+data Event =
+    PlaybackStatusChanged BusName (Maybe PlaybackStatus)
+  | LoopStatusChanged BusName (Maybe LoopStatus)
+  | VolumeChanged BusName (Maybe Double)
+  deriving (Show)
+
+-- | PropertiesChanged callback.
+propertiesChangedCallback :: Chan Event -> Signal -> IO ()
+propertiesChangedCallback chan s =
+  case signalSender s of
+    Just bus ->
+      case fromVariant (signalBody s !! 1) :: Maybe (M.Map String Variant) of
+        Just dict -> do
+          case M.lookup "PlaybackStatus" dict of
+            Just value -> writeChan chan
+              (PlaybackStatusChanged bus ((liftM read . fromVariant) value))
+            Nothing -> return ()
+          case M.lookup "LoopStatus" dict of
+            Just value -> writeChan chan
+              (LoopStatusChanged bus ((liftM read . fromVariant) value))
+            Nothing -> return ()
+          case M.lookup "Volume" dict of
+            Just value -> writeChan chan
+              (VolumeChanged bus (fromVariant value))
+            Nothing -> return ()
+        Nothing -> return ()
+    Nothing -> return ()
+
+processEvent :: Event -> Mpris ()
+processEvent event = do
+  config <- ask
+  case event of
+    PlaybackStatusChanged bus status ->
+      playbackStatusHook config bus status
+    LoopStatusChanged bus status ->
+      loopStatusHook config bus status
+    VolumeChanged bus volume ->
+      volumeHook config bus volume
+
+-- | Main event loop
+eventLoop :: Chan Event -> Mpris ()
+eventLoop chan = forever $ do
+    event <- liftIO $ readChan chan
+    processEvent event
+
 -- | Run the 'Mpris' computation and return the result inside 'IO'.
-runMpris :: Config -> Mpris a -> IO a
-runMpris config code = bracket
+runMpris :: Mpris a -> Config -> IORef State -> IO a
+runMpris code config state = fst `liftM` evalRWST (unMpris code) config state
+
+-- | Connect to the bus, initialize the state and run 'Mpris' computation.
+mpris :: Config -> Mpris a -> IO a
+mpris config code = bracket
   (do
    client <- D.connectSession
    players <- getPlayers client
-   -- register the property listener
-   -- D.addMatch client mprisEventMatcher (propertiesChangedCallback client)
-   newIORef State { client = client, players = players }
-  )
+   chan <- newChan
+   D.addMatch client mprisEventMatcher (propertiesChangedCallback chan)
+   newIORef State {
+     client = client
+   , players = players
+   , chan = chan })
   (\state -> do
-    State {client = client} <- readIORef state
+    State { client = client } <- readIORef state
+    print "Exiting..."
     D.disconnect client)
-  (liftM fst . evalRWST (unMpris code) config)
+  (\state -> do
+    State { chan = chan } <- readIORef state
+    forkIO $ runMpris (eventLoop chan) config state
+    runMpris code config state)
