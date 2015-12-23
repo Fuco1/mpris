@@ -123,28 +123,23 @@ mprisEventMatcher = D.matchAny
   , D.matchMember = Just "PropertiesChanged"
   }
 
+whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
+whenJust m a = maybe (return ()) a m
 
 -- | PropertiesChanged callback.
 propertiesChangedCallback :: Chan Event -> Signal -> IO ()
-propertiesChangedCallback chan s =
-  case signalSender s of
-    Just bus ->
-      case fromVariant (signalBody s !! 1) :: Maybe (M.Map String Variant) of
-        Just dict -> do
-          case M.lookup "PlaybackStatus" dict of
-            Just value -> writeChan chan
-              (PlaybackStatusChanged bus ((liftM read . fromVariant) value))
-            Nothing -> return ()
-          case M.lookup "LoopStatus" dict of
-            Just value -> writeChan chan
-              (LoopStatusChanged bus ((liftM read . fromVariant) value))
-            Nothing -> return ()
-          case M.lookup "Volume" dict of
-            Just value -> writeChan chan
-              (VolumeChanged bus (fromVariant value))
-            Nothing -> return ()
-        Nothing -> return ()
-    Nothing -> return ()
+propertiesChangedCallback chan s = do
+  let bus = signalSender s
+      dict = fromVariant (signalBody s !! 1) :: Maybe (M.Map String Variant)
+  case (bus, dict) of
+    (Just bus, Just dict) -> do
+      whenJust (M.lookup "PlaybackStatus" dict)
+        (writeChan chan . PlaybackStatusChanged bus . liftM read . fromVariant)
+      whenJust (M.lookup "LoopStatus" dict)
+         (writeChan chan . LoopStatusChanged bus . liftM read . fromVariant)
+      whenJust (M.lookup "Volume" dict)
+         (writeChan chan . VolumeChanged bus . fromVariant)
+    (_, _) -> return ()
 
 processEvent :: Event -> Mpris ()
 processEvent event = do
