@@ -46,6 +46,7 @@ import DBus
 import qualified DBus.Client as D
 
 import DBus.Mpris.Monad.Internal (getPlayers)
+import DBus.Mpris.Monad.Data
 import DBus.Mpris.MediaPlayer2.Player.Data
 
 data Config = Config
@@ -122,12 +123,6 @@ mprisEventMatcher = D.matchAny
   , D.matchMember = Just "PropertiesChanged"
   }
 
--- | Mpris events
-data Event =
-    PlaybackStatusChanged BusName (Maybe PlaybackStatus)
-  | LoopStatusChanged BusName (Maybe LoopStatus)
-  | VolumeChanged BusName (Maybe Double)
-  deriving (Show)
 
 -- | PropertiesChanged callback.
 propertiesChangedCallback :: Chan Event -> Signal -> IO ()
