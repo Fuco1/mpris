@@ -36,7 +36,7 @@ module DBus.Mpris.Monad
 import Control.Applicative
 import Control.Concurrent (forkIO)
 import Control.Concurrent.Chan
-import Control.Exception (bracket)
+import Control.Exception
 import Control.Monad.RWS
 import Data.Default
 import Data.IORef
@@ -104,10 +104,10 @@ current :: Mpris BusName
 current = gets currentPlayer
 
 -- | Call a method call in context of current dbus client.
-call :: MethodCall -> Mpris (Either MethodError MethodReturn)
+call :: MethodCall -> Mpris (Either D.ClientError (Either MethodError MethodReturn))
 call method = do
   client <- gets client
-  liftIO $ D.call client method
+  liftIO $ try (D.call client method >>= evaluate)
 
 -- | Like 'call' but ignores the result.
 call_ :: MethodCall -> Mpris ()

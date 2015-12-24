@@ -11,6 +11,7 @@ import DBus
 
 import DBus.Mpris.Monad
 import DBus.Mpris.Utils
+import Control.Monad.Trans (liftIO)
 
 -- | Construct a call to get value of property at interface
 propertyCall :: String     -- ^ Interface
@@ -28,8 +29,9 @@ getProperty :: IsVariant a =>
 getProperty interface prop bus = do
   reply <- call $ propertyCall interface prop `to` bus
   case reply of
-    Left _   -> return Nothing
-    Right r -> do
+    Left e   -> (liftIO $ print e) >> return Nothing
+    Right (Left e) -> (liftIO $ print e) >> return Nothing
+    Right (Right r) -> do
       let body = methodReturnBody r
       -- the bind here runs inside Maybe monad, neat!
       return $ fromVariant (head body) >>= fromVariant
