@@ -12,6 +12,7 @@ module DBus.Mpris.MediaPlayer2.Player.Properties
        , loopStatus
        , rate
        , shuffle
+       , Metadata(..)
        , metadata
        , volume
        , position
@@ -28,15 +29,20 @@ module DBus.Mpris.MediaPlayer2.Player.Properties
 import DBus
 import Data.Map
 import Data.Int (Int64)
+import Data.Word (Word64)
 import Control.Monad (liftM)
+import Control.Monad.Trans (liftIO)
 
 import DBus.Mpris.Properties
 import DBus.Mpris.Monad
 
-import DBus.Mpris.MediaPlayer2.Player.Data
+import DBus.Mpris.MediaPlayer2.Player.Data as Data
 
 unpackIntM :: Mpris (Maybe Int64) -> Mpris (Maybe Integer)
 unpackIntM = liftM . liftM $ fromIntegral
+
+unpackWordM :: Mpris (Maybe Word64) -> Mpris (Maybe Integer)
+unpackWordM = liftM . liftM $ fromIntegral
 
 readM :: Read a => Mpris (Maybe String) -> Mpris (Maybe a)
 readM = liftM . liftM $ read
@@ -63,8 +69,15 @@ shuffle :: BusName -> Mpris (Maybe Bool)
 shuffle = property "Shuffle"
 
 -- | The metadata of the current element.
-metadata :: BusName -> Mpris (Maybe (Map String Variant))
-metadata = property "Metadata"
+metadata :: BusName -> Mpris (Maybe Metadata)
+metadata bus = fmap (\md -> Metadata {
+    trackId = fromVariant (md ! "mpris:trackid")
+  , Data.length = fromIntegral `liftM` (fromVariant (md ! "mpris:length") :: Maybe Word64)
+  , album = fromVariant (md ! "xesam:album")
+  , artist = head `liftM` fromVariant (md ! "xesam:artist")
+  , title = fromVariant (md ! "xesam:title")
+  , unknown = md
+  }) `liftM` property "Metadata" bus
 
 -- | The volume level.
 volume :: BusName -> Mpris (Maybe Double)
