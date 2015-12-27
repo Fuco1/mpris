@@ -15,12 +15,16 @@
 -- > pauseCurrent :: Mpris ()
 -- > pauseCurrent = current >>= pause
 --
--- To evaluate a Mpris action use 'runMpris' which brings it back into 'IO', for example:
+-- To evaluate a Mpris action use 'mpris' which brings it back into
+-- 'IO', for example:
 --
 -- > main :: IO ()
 -- > main = do
 -- >   let bus = busName_ "org.mpris.MediaPlayer2.mpd"
--- >   runMpris $ pause bus
+-- >   mpris def $ pause bus
+--
+-- There is also a low-level function 'runMpris' where you have to
+-- provide the 'State' manually.
 module DBus.Mpris.Monad
        ( Mpris
        , State(..)
