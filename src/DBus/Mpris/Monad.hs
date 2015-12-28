@@ -31,6 +31,11 @@ module DBus.Mpris.Monad
        , State(..)
        , Config(..)
        , Event(..)
+       , Callback
+       , Call
+       , bus
+       , value
+       , liftMpris
        , current
        , call
        , call_
@@ -43,9 +48,11 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.Chan
 import Control.Exception
 import Control.Monad.RWS
+import Control.Monad.Reader
 import Data.Default
 import Data.IORef
 import qualified Data.Map as M
+import qualified Data.List as L
 
 import DBus
 import qualified DBus.Client as D
@@ -55,16 +62,46 @@ import DBus.Mpris.Monad.Data
 import DBus.Mpris.MediaPlayer2.Player.Data
 
 data Config = Config
-  { playbackStatusHook :: BusName -> Maybe PlaybackStatus -> Mpris ()
-  , loopStatusHook :: BusName -> Maybe LoopStatus -> Mpris ()
-  , volumeHook :: BusName -> Maybe Double -> Mpris ()
+  { playbackStatusHook :: Callback PlaybackStatus
+  , loopStatusHook :: Callback LoopStatus
+  , volumeHook :: Callback Double
   }
 
+newtype Call a b = Call (ReaderT (BusName, Maybe a) Mpris b)
+               deriving (Functor, Monad, MonadIO, MonadReader (BusName, Maybe a))
+
+instance Monoid b => Monoid (Call a b) where
+  mempty = Call $ return mempty
+  Call f `mappend` Call g = Call $ f >> g
+
+liftMpris :: Mpris b -> Call a b
+liftMpris = Call . lift
+
+bus :: Call a BusName
+bus = Call $ fst `fmap` ask
+
+value :: Call a (Maybe a)
+value = Call $ snd `fmap` ask
+
+type Callback a = Call a ()
+
+runCallback :: Callback a -> BusName -> Maybe a -> Mpris ()
+runCallback (Call callback) bus value = runReaderT callback (bus, value)
+
+updateCurrentPlayer :: Callback PlaybackStatus
+updateCurrentPlayer = do
+  bus <- bus
+  value <- value
+  liftMpris $ case value of
+    Just Playing -> modify (\state@State { players = players } ->
+                             state { players = update players bus } )
+    _            -> return ()
+  where update players new = new : (L.delete new players)
+
 instance Default Config where
-  def = Config { playbackStatusHook = empty
-               , loopStatusHook = empty
-               , volumeHook = empty }
-    where empty _ _ = return ()
+  def = Config { playbackStatusHook = updateCurrentPlayer
+               , loopStatusHook = mempty
+               , volumeHook = mempty }
 
 -- | Internal state.
 --
@@ -136,11 +173,11 @@ processEvent event = do
   config <- ask
   case event of
     PlaybackStatusChanged bus status ->
-      playbackStatusHook config bus status
+      runCallback (playbackStatusHook config) bus status
     LoopStatusChanged bus status ->
-      loopStatusHook config bus status
+      runCallback (loopStatusHook config) bus status
     VolumeChanged bus volume ->
-      volumeHook config bus volume
+      runCallback (volumeHook config) bus volume
 
 -- | Main event loop
 eventLoop :: Chan Event -> Mpris ()
