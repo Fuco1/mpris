@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 -- | Convenient monad for running MPRIS actions.
@@ -77,27 +78,12 @@ data State = State { client :: D.Client -- ^ The dbus client used to make the ca
                    }
 
 -- | Type wrapper for Mpris monad
-newtype Mpris a = Mpris { unMpris :: RWST Config () (IORef State) IO a } deriving Functor
-
-instance Applicative Mpris where
-  pure = Mpris . pure
-  Mpris a <*> Mpris f = Mpris (a <*> f)
-
-instance Monad Mpris where
-  return = Mpris . return
-  Mpris a >>= f = Mpris $ a >>= unMpris . f
-
-instance MonadReader Config Mpris where
-  ask = Mpris ask
-  reader f = Mpris $ f `liftM` ask
-  local f (Mpris a) = Mpris $ local f a
+newtype Mpris a = Mpris { unMpris :: RWST Config () (IORef State) IO a }
+                deriving (Functor, Applicative, Monad, MonadIO, MonadReader Config)
 
 instance MonadState State Mpris where
   get = Mpris $ get >>= liftIO . readIORef
   put s = Mpris $ get >>= liftIO . flip atomicWriteIORef s
-
-instance MonadIO Mpris where
-  liftIO = Mpris . liftIO
 
 -- | Extract current player from the 'State'.
 currentPlayer :: State -> BusName
