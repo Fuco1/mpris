@@ -161,9 +161,9 @@ propertiesChangedCallback chan s = do
   case (bus, dict) of
     (Just bus, Just dict) -> do
       whenJust (M.lookup "PlaybackStatus" dict)
-        (writeChan chan . PlaybackStatusChanged bus . liftM read . fromVariant)
+        (writeChan chan . PlaybackStatusChanged bus . fmap read . fromVariant)
       whenJust (M.lookup "LoopStatus" dict)
-         (writeChan chan . LoopStatusChanged bus . liftM read . fromVariant)
+         (writeChan chan . LoopStatusChanged bus . fmap read . fromVariant)
       whenJust (M.lookup "Volume" dict)
          (writeChan chan . VolumeChanged bus . fromVariant)
     (_, _) -> return ()
@@ -187,7 +187,7 @@ eventLoop chan = forever $ do
 
 -- | Run the 'Mpris' computation and return the result inside 'IO'.
 runMpris :: Mpris a -> Config -> IORef State -> IO a
-runMpris code config state = fst `liftM` evalRWST (unMpris code) config state
+runMpris code config state = fst `fmap` evalRWST (unMpris code) config state
 
 -- | Connect to the bus, initialize the state and run 'Mpris' computation.
 mpris :: Config -> Mpris a -> IO a
