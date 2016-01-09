@@ -29,7 +29,6 @@ module DBus.Mpris.MediaPlayer2.Player.Properties
 import DBus
 import Data.Map
 import Data.Int (Int64)
-import Data.Word (Word64)
 import Control.Monad (liftM)
 import Control.Monad.Trans (liftIO)
 
@@ -40,9 +39,6 @@ import DBus.Mpris.MediaPlayer2.Player.Data as Data
 
 unpackIntM :: Mpris (Maybe Int64) -> Mpris (Maybe Integer)
 unpackIntM = liftM . liftM $ fromIntegral
-
-unpackWordM :: Mpris (Maybe Word64) -> Mpris (Maybe Integer)
-unpackWordM = liftM . liftM $ fromIntegral
 
 readM :: Read a => Mpris (Maybe String) -> Mpris (Maybe a)
 readM = liftM . liftM $ read
