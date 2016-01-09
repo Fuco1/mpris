@@ -54,5 +54,6 @@ data Metadata = Metadata
   , album :: Maybe String   -- ^ Album
   , artist :: Maybe String  -- ^ Artist
   , title :: Maybe String   -- ^ Title
+  , url :: Maybe String     -- ^ Url
   , unknown :: Map String Variant -- ^ Unknown fields
   } deriving (Show)

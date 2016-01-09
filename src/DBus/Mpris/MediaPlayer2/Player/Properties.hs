@@ -75,6 +75,7 @@ metadata bus = fmap (\md -> Metadata {
   , album = lookup "xesam:album" md >>= fromVariant
   , artist = head <$> (lookup "xesam:artist" md >>= fromVariant)
   , title = lookup "xesam:title" md >>= fromVariant
+  , url = lookup "xesam:url" md >>= fromVariant
   , unknown = md
   }) `liftM` property "Metadata" bus
   where fromWord :: Int64 -> Integer
