@@ -50,7 +50,7 @@ data LoopStatus = None     -- ^ The playback will stop when there are no more tr
 -- | Metadata about the current track
 data Metadata = Metadata
   { trackId :: Maybe String -- ^ Mpris Track ID
-  , length :: Maybe Integer -- ^ Length in microseconds
+  , len :: Maybe Integer    -- ^ Length in microseconds
   , album :: Maybe String   -- ^ Album
   , artist :: Maybe String  -- ^ Artist
   , title :: Maybe String   -- ^ Title

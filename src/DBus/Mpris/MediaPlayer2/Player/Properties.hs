@@ -72,7 +72,7 @@ shuffle = property "Shuffle"
 metadata :: BusName -> Mpris (Maybe Metadata)
 metadata bus = fmap (\md -> Metadata {
     trackId = fromVariant (md ! "mpris:trackid")
-  , Data.length = fromIntegral `liftM` (fromVariant (md ! "mpris:length") :: Maybe Word64)
+  , len = fromIntegral `liftM` (fromVariant (md ! "mpris:length") :: Maybe Word64)
   , album = fromVariant (md ! "xesam:album")
   , artist = head `liftM` fromVariant (md ! "xesam:artist")
   , title = fromVariant (md ! "xesam:title")
