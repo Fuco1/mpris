@@ -29,8 +29,11 @@ module DBus.Mpris.MediaPlayer2.Player.Properties
 import DBus
 import Data.Map
 import Data.Int (Int64)
+import Control.Applicative ((<$>))
 import Control.Monad (liftM)
 import Control.Monad.Trans (liftIO)
+
+import Prelude hiding (lookup)
 
 import DBus.Mpris.Properties
 import DBus.Mpris.Monad
@@ -67,13 +70,15 @@ shuffle = property "Shuffle"
 -- | The metadata of the current element.
 metadata :: BusName -> Mpris (Maybe Metadata)
 metadata bus = fmap (\md -> Metadata {
-    trackId = fromVariant (md ! "mpris:trackid")
-  , len = fromIntegral `liftM` (fromVariant (md ! "mpris:length") :: Maybe Word64)
-  , album = fromVariant (md ! "xesam:album")
-  , artist = head `liftM` fromVariant (md ! "xesam:artist")
-  , title = fromVariant (md ! "xesam:title")
+    trackId = lookup "mpris:trackid" md >>= fromVariant
+  , len = fromWord <$> (lookup "mpris:length" md >>= fromVariant)
+  , album = lookup "xesam:album" md >>= fromVariant
+  , artist = head <$> (lookup "xesam:artist" md >>= fromVariant)
+  , title = lookup "xesam:title" md >>= fromVariant
   , unknown = md
   }) `liftM` property "Metadata" bus
+  where fromWord :: Int64 -> Integer
+        fromWord = fromIntegral
 
 -- | The volume level.
 volume :: BusName -> Mpris (Maybe Double)
