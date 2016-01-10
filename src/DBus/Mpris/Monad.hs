@@ -52,12 +52,13 @@ import Control.Monad.Reader
 import Data.Default
 import Data.IORef
 import qualified Data.Map as M
+import Data.Maybe (listToMaybe)
 import qualified Data.List as L
 
 import DBus
 import qualified DBus.Client as D
 
-import DBus.Mpris.Monad.Internal (getPlayers)
+import DBus.Mpris.Monad.Internal
 import DBus.Mpris.Monad.Data
 import DBus.Mpris.MediaPlayer2.Player.Data
 
@@ -123,12 +124,23 @@ instance MonadState State Mpris where
   put s = Mpris $ get >>= liftIO . flip atomicWriteIORef s
 
 -- | Extract current player from the 'State'.
-currentPlayer :: State -> BusName
-currentPlayer = head . players
+currentPlayer :: State -> Maybe BusName
+currentPlayer = listToMaybe . players
 
 -- | Return current player
-current :: Mpris BusName
-current = gets currentPlayer
+current :: Mpris (Maybe BusName)
+current = do
+  c' <- gets currentPlayer
+  case c' of
+    Just c -> do
+      alive <- isAlive c
+      if alive
+        then return $ Just c
+        else do
+          modify (\state@State { players = players } ->
+                   state { players = tail players } )
+          current
+    Nothing -> return Nothing
 
 -- | Call a method call in context of current dbus client.
 call :: MethodCall -> Mpris (Either D.ClientError (Either MethodError MethodReturn))
@@ -139,6 +151,12 @@ call method = do
 -- | Like 'call' but ignores the result.
 call_ :: MethodCall -> Mpris ()
 call_ = void . call
+
+-- | Check if a bus is still alive.
+isAlive :: BusName -> Mpris Bool
+isAlive bus = do
+  client <- gets client
+  liftIO $ nameHasOwner client bus
 
 -- | PropertiesChanged signal matcher.
 mprisEventMatcher :: D.MatchRule
