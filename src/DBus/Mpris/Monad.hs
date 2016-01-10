@@ -36,9 +36,9 @@ module DBus.Mpris.Monad
        , bus
        , value
        , liftMpris
-       , current
        , call
        , call_
+       , isAlive
        , runMpris
        , mpris
        ) where
@@ -52,7 +52,6 @@ import Control.Monad.Reader
 import Data.Default
 import Data.IORef
 import qualified Data.Map as M
-import Data.Maybe (listToMaybe)
 import qualified Data.List as L
 
 import DBus
@@ -113,6 +112,7 @@ instance Default Config where
 data State = State { client :: D.Client -- ^ The dbus client used to make the calls
                    , players :: [BusName] -- ^ List of available players-capable players as bus names
                    , chan :: Chan Event -- ^ Event channel
+                   , currentInitialized :: Bool -- ^ A flag signifying whether the current player has been initialized.
                    }
 
 -- | Type wrapper for Mpris monad
@@ -122,25 +122,6 @@ newtype Mpris a = Mpris { unMpris :: RWST Config () (IORef State) IO a }
 instance MonadState State Mpris where
   get = Mpris $ get >>= liftIO . readIORef
   put s = Mpris $ get >>= liftIO . flip atomicWriteIORef s
-
--- | Extract current player from the 'State'.
-currentPlayer :: State -> Maybe BusName
-currentPlayer = listToMaybe . players
-
--- | Return current player
-current :: Mpris (Maybe BusName)
-current = do
-  c' <- gets currentPlayer
-  case c' of
-    Just c -> do
-      alive <- isAlive c
-      if alive
-        then return $ Just c
-        else do
-          modify (\state@State { players = players } ->
-                   state { players = tail players } )
-          current
-    Nothing -> return Nothing
 
 -- | Call a method call in context of current dbus client.
 call :: MethodCall -> Mpris (Either D.ClientError (Either MethodError MethodReturn))
@@ -218,7 +199,8 @@ mpris config code = bracket
    newIORef State {
      client = client
    , players = players
-   , chan = chan })
+   , chan = chan
+   , currentInitialized = False })
   (\state -> do
     State { client = client } <- readIORef state
     print "Exiting..."
