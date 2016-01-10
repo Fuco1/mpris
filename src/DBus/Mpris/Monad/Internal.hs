@@ -3,10 +3,12 @@
 -- | Internal helpers for the Mpris monad
 module DBus.Mpris.Monad.Internal
        ( getPlayers
+       , nameHasOwner
        ) where
 
 import Control.Applicative ((<$>))
 import Data.List as L
+import Data.Maybe (fromMaybe)
 
 import DBus
 import qualified DBus.Client as D
@@ -19,6 +21,16 @@ listNamesCall = (methodCall "/org/freedesktop/DBus" "org.freedesktop.DBus" "List
 -- | List all available dbus buses as strings
 listNames :: D.Client -> IO (Maybe [String])
 listNames client = fromVariant . head . methodReturnBody <$> D.call_ client listNamesCall
+
+nameHasOwnerCall :: String -> MethodCall
+nameHasOwnerCall bus = (methodCall "/org/freedesktop/DBus" "org.freedesktop.DBus" "NameHasOwner")
+  { methodCallDestination = Just "org.freedesktop.DBus"
+  , methodCallBody = [toVariant bus] }
+
+-- | Check if a bus is still alive.
+nameHasOwner :: D.Client -> BusName -> IO Bool
+nameHasOwner client bus =
+  fromMaybe False . fromVariant . head . methodReturnBody <$> D.call_ client (nameHasOwnerCall $ formatBusName bus)
 
 -- | Get all available mpris-enabled players.
 getPlayers :: D.Client -> IO [BusName]
