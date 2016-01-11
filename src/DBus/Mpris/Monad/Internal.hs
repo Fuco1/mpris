@@ -32,12 +32,23 @@ nameHasOwner :: D.Client -> BusName -> IO Bool
 nameHasOwner client bus =
   fromMaybe False . fromVariant . head . methodReturnBody <$> D.call_ client (nameHasOwnerCall $ formatBusName bus)
 
+getNameOwnerCall :: String -> MethodCall
+getNameOwnerCall bus = (methodCall "/org/freedesktop/DBus" "org.freedesktop.DBus" "GetNameOwner")
+  { methodCallDestination = Just "org.freedesktop.DBus"
+  , methodCallBody = [toVariant bus] }
+
+getNameOwner :: D.Client -> BusName -> IO BusName
+getNameOwner client bus =
+  fromMaybe "" . fromVariant . head . methodReturnBody <$> D.call_ client (getNameOwnerCall $ formatBusName bus)
+
 -- | Get all available mpris-enabled players.
 getPlayers :: D.Client -> IO [BusName]
 getPlayers client = do
   buses <- listNames client
-  return $ case buses of
-   Nothing -> []
-   Just b  -> L.map busName_ . L.filter (\x ->
-     all ($x) [ (/= "org.mpris.MediaPlayer2.vlc")
-              , isPrefixOf "org.mpris.MediaPlayer2."]) $ b
+  case buses of
+   Nothing -> return []
+   Just b  -> do
+     let mprisBusses = L.map busName_ . L.filter (\x ->
+           all ($x) [ (/= "org.mpris.MediaPlayer2.vlc")
+                    , isPrefixOf "org.mpris.MediaPlayer2."]) $ b
+     mapM (getNameOwner client) mprisBusses
