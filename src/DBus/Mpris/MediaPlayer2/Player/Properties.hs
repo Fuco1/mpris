@@ -15,6 +15,7 @@ module DBus.Mpris.MediaPlayer2.Player.Properties
        , Metadata(..)
        , metadata
        , volume
+       , setVolume
        , position
        , minimumRate
        , maximumRate
@@ -36,7 +37,7 @@ import Control.Monad.Trans (liftIO)
 
 import Prelude hiding (lookup)
 
-import DBus.Mpris.Properties
+import qualified DBus.Mpris.Properties as P
 import DBus.Mpris.Monad
 
 import DBus.Mpris.MediaPlayer2.Player.Data as Data
@@ -48,7 +49,10 @@ readM :: Read a => Mpris (Maybe String) -> Mpris (Maybe a)
 readM = liftM . liftM $ read
 
 property :: IsVariant a => String -> BusName -> Mpris (Maybe a)
-property = getProperty "org.mpris.MediaPlayer2.Player"
+property = P.getProperty "org.mpris.MediaPlayer2.Player"
+
+setProperty :: IsVariant a => String -> BusName -> a -> Mpris ()
+setProperty = P.setProperty "org.mpris.MediaPlayer2.Player"
 
 -- | The current playback status.
 playbackStatus :: BusName -> Mpris (Maybe PlaybackStatus)
@@ -88,6 +92,10 @@ metadata bus = fmap (\md -> Metadata {
 -- | The volume level.
 volume :: BusName -> Mpris (Maybe Double)
 volume = property "Volume"
+
+-- | Set volume level.
+setVolume :: BusName -> Double -> Mpris ()
+setVolume = setProperty "Volume"
 
 -- | The current track position in microseconds, between 0 and the
 -- 'mpris:length' metadata entry (see Metadata).
