@@ -29,8 +29,8 @@ getProperty :: IsVariant a =>
 getProperty interface prop bus = do
   reply <- call $ getPropertyCall interface prop `to` bus
   case reply of
-    Left e   -> (liftIO $ print e) >> return Nothing
-    Right (Left e) -> (liftIO $ print e) >> return Nothing
+    Left e   -> liftIO $ print e >> return Nothing
+    Right (Left e) -> liftIO $ print e >> return Nothing
     Right (Right r) -> do
       let body = methodReturnBody r
       -- the bind here runs inside Maybe monad, neat!
