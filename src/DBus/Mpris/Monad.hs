@@ -40,6 +40,7 @@ module DBus.Mpris.Monad
        , call_
        , isAlive
        , runMpris
+       , forkMpris
        , mpris
        ) where
 
@@ -187,6 +188,12 @@ eventLoop chan = forever $ do
 -- | Run the 'Mpris' computation and return the result inside 'IO'.
 runMpris :: Mpris a -> Config -> IORef State -> IO a
 runMpris code config state = fst `fmap` evalRWST (unMpris code) config state
+
+forkMpris :: Mpris () -> Mpris ()
+forkMpris action = do
+  config <- ask
+  state <- Mpris get
+  void . liftIO $ forkIO $ runMpris action config state
 
 -- | Connect to the bus, initialize the state and run 'Mpris' computation.
 mpris :: Config -> Mpris a -> IO a
