@@ -14,10 +14,10 @@ import DBus.Mpris.Utils
 import Control.Monad.Trans (liftIO)
 
 -- | Construct a call to get value of property at interface
-propertyCall :: String     -- ^ Interface
+getPropertyCall :: String     -- ^ Interface
              -> String     -- ^ Property name
              -> MethodCall
-propertyCall interface property = (methodCall "/org/mpris/MediaPlayer2" "org.freedesktop.DBus.Properties" "Get")
+getPropertyCall interface property = (methodCall "/org/mpris/MediaPlayer2" "org.freedesktop.DBus.Properties" "Get")
   { methodCallBody = [toVariant interface, toVariant property] }
 
 -- | Get value of interface's property at bus
@@ -27,7 +27,7 @@ getProperty :: IsVariant a =>
             -> BusName -- ^ Bus
             -> Mpris (Maybe a)
 getProperty interface prop bus = do
-  reply <- call $ propertyCall interface prop `to` bus
+  reply <- call $ getPropertyCall interface prop `to` bus
   case reply of
     Left e   -> (liftIO $ print e) >> return Nothing
     Right (Left e) -> (liftIO $ print e) >> return Nothing
