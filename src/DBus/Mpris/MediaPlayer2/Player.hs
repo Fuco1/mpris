@@ -27,6 +27,7 @@ current = do
   c' <- gets currentPlayer
   case c' of
     Just c -> do
+      -- TODO: get rid of this check?
       alive <- isAlive c
       if alive
         then do
