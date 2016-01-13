@@ -10,4 +10,5 @@ data Event =
     PlaybackStatusChanged BusName (Maybe PlaybackStatus)
   | LoopStatusChanged BusName (Maybe LoopStatus)
   | VolumeChanged BusName (Maybe Double)
+  | PlayerQuit BusName (Maybe ())
   deriving (Show)

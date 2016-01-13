@@ -66,6 +66,7 @@ data Config = Config
   { playbackStatusHook :: Callback PlaybackStatus
   , loopStatusHook :: Callback LoopStatus
   , volumeHook :: Callback Double
+  , playerQuitHook :: Callback ()
   }
 
 newtype Call a b = Call (ReaderT (BusName, Maybe a) Mpris b)
@@ -99,10 +100,17 @@ updateCurrentPlayer = do
     _            -> return ()
   where update players new = new : (L.delete new players)
 
+deletePlayer :: Callback ()
+deletePlayer = do
+  bus <- bus
+  liftMpris $ modify (\s@State { players = pl } ->
+                       s { players = L.delete bus pl })
+
 instance Default Config where
   def = Config { playbackStatusHook = updateCurrentPlayer
                , loopStatusHook = mempty
-               , volumeHook = mempty }
+               , volumeHook = mempty
+               , playerQuitHook = deletePlayer }
 
 -- | Internal state.
 --
@@ -150,6 +158,26 @@ mprisEventMatcher = D.matchAny
   , D.matchMember = Just "PropertiesChanged"
   }
 
+-- TODO: move the matchers somewhere else
+-- |
+nameOwnerChangedEventMatcher :: D.MatchRule
+nameOwnerChangedEventMatcher = D.matchAny
+  { D.matchSender = Nothing
+  , D.matchDestination = Nothing
+  , D.matchPath = Just "/org/freedesktop/DBus"
+  , D.matchInterface = Just "org.freedesktop.DBus"
+  , D.matchMember = Just "NameOwnerChanged"
+  }
+
+nameOwnerChangedCallback :: Chan Event -> Signal -> IO ()
+nameOwnerChangedCallback chan s = do
+  let [origin', _, new'] = signalBody s
+      origin = fromVariant origin'
+      new = fromVariant new' :: Maybe String
+  case (origin, new) of
+   (Just o@(':':_), Just "") -> writeChan chan (PlayerQuit (busName_ o) (Just ()))
+   (_, _) -> return ()
+
 whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
 whenJust m a = maybe (return ()) a m
 
@@ -178,6 +206,9 @@ processEvent event = do
       runCallback (loopStatusHook config) bus status
     VolumeChanged bus volume ->
       runCallback (volumeHook config) bus volume
+    PlayerQuit bus v -> do
+      pl <- gets players
+      when (bus `elem` pl) $ runCallback (playerQuitHook config) bus v
 
 -- | Main event loop
 eventLoop :: Chan Event -> Mpris ()
@@ -203,6 +234,7 @@ mpris config code = bracket
    players <- getPlayers client
    chan <- newChan
    D.addMatch client mprisEventMatcher (propertiesChangedCallback chan)
+   D.addMatch client nameOwnerChangedEventMatcher (nameOwnerChangedCallback chan)
    newIORef State {
      client = client
    , players = players
