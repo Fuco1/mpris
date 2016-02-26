@@ -6,7 +6,9 @@
 module DBus.Mpris.MediaPlayer2
        ( module DBus.Mpris.MediaPlayer2.Methods
        , module DBus.Mpris.MediaPlayer2.Properties
+       , module DBus.Mpris.MediaPlayer2.Data
        ) where
 
 import DBus.Mpris.MediaPlayer2.Methods
 import DBus.Mpris.MediaPlayer2.Properties
+import DBus.Mpris.MediaPlayer2.Data

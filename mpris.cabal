@@ -44,6 +44,7 @@ library
     DBus.Mpris.Monad.Internal
     DBus.Mpris.Properties
     DBus.Mpris.MediaPlayer2.Properties
+    DBus.Mpris.MediaPlayer2.Data
     DBus.Mpris.MediaPlayer2.Methods
     DBus.Mpris.MediaPlayer2.Player.Properties
     DBus.Mpris.MediaPlayer2.Player.Data
