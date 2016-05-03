@@ -72,7 +72,12 @@ data Config = Config
   }
 
 newtype Call a b = Call (ReaderT (BusName, Maybe a) Mpris b)
-               deriving (Functor, Monad, MonadIO, MonadReader (BusName, Maybe a))
+                 deriving ( Functor
+                          , Applicative
+                          , Monad
+                          , MonadIO
+                          , MonadReader (BusName, Maybe a)
+                          )
 
 instance Monoid b => Monoid (Call a b) where
   mempty = Call $ return mempty
