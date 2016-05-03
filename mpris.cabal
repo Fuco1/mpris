@@ -50,7 +50,7 @@ library
     DBus.Mpris.MediaPlayer2.Player.Data
     DBus.Mpris.MediaPlayer2.Player.Methods
   build-depends:
-    base                    ==4.6.*,
+    base                    >= 4.6 && < 5,
     dbus                    >= 0.10,
     mtl                     >= 2.1.2,
     containers              >= 0.5,
