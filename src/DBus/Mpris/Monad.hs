@@ -41,6 +41,7 @@ module DBus.Mpris.Monad
        , isAlive
        , runMpris
        , forkMpris
+       , logMessage
        , mpris
        ) where
 
@@ -67,6 +68,7 @@ data Config = Config
   , loopStatusHook :: Callback LoopStatus
   , volumeHook :: Callback Double
   , playerQuitHook :: Callback ()
+  , logger :: String -> IO ()
   }
 
 newtype Call a b = Call (ReaderT (BusName, Maybe a) Mpris b)
@@ -110,7 +112,8 @@ instance Default Config where
   def = Config { playbackStatusHook = updateCurrentPlayer
                , loopStatusHook = mempty
                , volumeHook = mempty
-               , playerQuitHook = deletePlayer }
+               , playerQuitHook = deletePlayer
+               , logger = print }
 
 -- | Internal state.
 --
@@ -226,6 +229,12 @@ forkMpris action = do
   state <- Mpris get
   void . liftIO $ forkIO $ runMpris action config state
 
+-- | Log a message using the logger given in the config.
+logMessage :: Show a => a -> Mpris ()
+logMessage s = do
+  l <- logger `fmap` ask
+  liftIO $ l (show s)
+
 -- | Connect to the bus, initialize the state and run 'Mpris' computation.
 mpris :: Config -> Mpris a -> IO a
 mpris config code = bracket
@@ -242,7 +251,7 @@ mpris config code = bracket
    , currentInitialized = False })
   (\state -> do
     State { client = client } <- readIORef state
-    print "Exiting..."
+    logger config "Exiting..."
     D.disconnect client)
   (\state -> do
     State { chan = chan } <- readIORef state
