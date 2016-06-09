@@ -7,17 +7,29 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.Default
 
-myPlaybackStatusHook :: BusName -> Maybe PlaybackStatus -> Mpris ()
-myPlaybackStatusHook bus status =
-  liftIO . print $ "Status changed " ++ show bus ++ " to " ++ show status
+whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
+whenJust a f = maybe (return ()) f a
 
-myLoopStatusHook :: BusName -> Maybe LoopStatus -> Mpris ()
-myLoopStatusHook bus status =
-  liftIO . print $ "Loop changed " ++ show bus ++ " to " ++ show status
+whenJustM :: Monad m => m (Maybe a) -> (a -> m ()) -> m ()
+whenJustM a f = a >>= \v -> whenJust v f
 
-myVolumeHook :: BusName -> Maybe Double -> Mpris ()
-myVolumeHook bus status =
-  liftIO . print $ "Volume changed " ++ show bus ++ " to " ++ show status
+myPlaybackStatusHook :: Callback PlaybackStatus
+myPlaybackStatusHook = do
+  bus <- bus
+  whenJustM value $ \status ->
+    liftIO . print $ "Status changed " ++ show bus ++ " to " ++ show status
+
+myLoopStatusHook :: Callback LoopStatus
+myLoopStatusHook = do
+  bus <- bus
+  whenJustM value $ \status ->
+    liftIO . print $ "Loop changed " ++ show bus ++ " to " ++ show status
+
+myVolumeHook :: Callback Double
+myVolumeHook = do
+  bus <- bus
+  whenJustM value $ \volume ->
+    liftIO . print $ "Volume changed " ++ show bus ++ " to " ++ show volume
 
 config :: Config
 config = def { playbackStatusHook = myPlaybackStatusHook
