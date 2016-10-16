@@ -33,6 +33,8 @@ module DBus.Mpris.Monad
        , Event(..)
        , Callback
        , Call
+       -- TODO: this is probably not correct
+       , def
        , bus
        , value
        , liftMpris
