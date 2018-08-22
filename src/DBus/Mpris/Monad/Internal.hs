@@ -22,6 +22,15 @@ listNamesCall = (methodCall "/org/freedesktop/DBus" "org.freedesktop.DBus" "List
 listNames :: D.Client -> IO (Maybe [String])
 listNames client = fromVariant . head . methodReturnBody <$> D.call_ client listNamesCall
 
+listQueuedOwnersCall :: String -> MethodCall
+listQueuedOwnersCall service = (methodCall "/org/freedesktop/DBus" "org.freedesktop.DBus" "ListQueuedOwners")
+  { methodCallDestination = Just "org.freedesktop.DBus"
+  , methodCallBody = [toVariant service] }
+
+-- | List all owners of the service
+listQueuedOwners :: D.Client -> BusName -> IO (Maybe [String])
+listQueuedOwners client service = fromVariant . head . methodReturnBody <$> D.call_ client (listQueuedOwnersCall $ formatBusName service)
+
 nameHasOwnerCall :: String -> MethodCall
 nameHasOwnerCall bus = (methodCall "/org/freedesktop/DBus" "org.freedesktop.DBus" "NameHasOwner")
   { methodCallDestination = Just "org.freedesktop.DBus"
@@ -48,7 +57,5 @@ getPlayers client = do
   case buses of
    Nothing -> return []
    Just b  -> do
-     let mprisBusses = L.map busName_ . L.filter (\x ->
-           all ($x) [ (/= "org.mpris.MediaPlayer2.vlc")
-                    , isPrefixOf "org.mpris.MediaPlayer2."]) $ b
-     mapM (getNameOwner client) mprisBusses
+     let mprisBusses = L.map busName_ . L.filter (isPrefixOf "org.mpris.MediaPlayer2.") $ b
+     concat <$> mapM (\x -> listQueuedOwners client x >>= return . map busName_ . fromMaybe []) mprisBusses
