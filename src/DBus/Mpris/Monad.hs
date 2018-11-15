@@ -81,9 +81,11 @@ newtype Call a b = Call (ReaderT (BusName, Maybe a) Mpris b)
                           , MonadReader (BusName, Maybe a)
                           )
 
+instance Monoid b => Semigroup (Call a b) where
+  Call f <> Call g = Call $ f >> g
+
 instance Monoid b => Monoid (Call a b) where
   mempty = Call $ return mempty
-  Call f `mappend` Call g = Call $ f >> g
 
 liftMpris :: Mpris b -> Call a b
 liftMpris = Call . lift
